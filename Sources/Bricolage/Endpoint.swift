@@ -4,13 +4,19 @@
 
 import Foundation
 
-public protocol Endpoint {
+public typealias Endpoint = RequestProviding & ResponseDecoding
+
+public protocol RequestProviding {
+    func urlRequest(relativeTo url: URL) -> URLRequest?
+}
+
+public protocol ResponseDecoding {
 
     associatedtype Success
     associatedtype Failure: Error
 
-    func urlRequest(relativeTo url: URL) -> URLRequest?
+    typealias Result = Swift.Result<Success, Failure>
 
-    func decodeData(_ data: Data?, for response: HTTPURLResponse) -> Result<Success, Failure>
+    func decodeData(_ data: Data?, for response: HTTPURLResponse) -> Result
 
 }
