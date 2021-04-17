@@ -1,6 +1,8 @@
 # Bricolage
 
-A somewhat random assortment of useful Swift types. Wholly incomplete documentation follows...
+A Swift Package containing a somewhat random assortment of useful Swift types. 
+
+Wholly incomplete documentation follows...
 
 ## Configure
 ```swift
