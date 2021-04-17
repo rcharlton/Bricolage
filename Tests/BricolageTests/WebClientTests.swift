@@ -28,6 +28,17 @@ class WebClientTests: XCTestCase {
 
     // MARK: -
 
+    func given<E: Endpoint>(data: Data?, statusCode: Int?, for endpoint: E) {
+        let urlRequest = webClient.urlRequest(for: endpoint)!
+        let response = statusCode.map { HTTPURLResponse(url: urlRequest.url!, statusCode: $0) }
+        StubURLProtocol.set(data: data, response: response, for: urlRequest)
+    }
+
+    func given<E: Endpoint>(error: Error, for endpoint: E) {
+        let urlRequest = webClient.urlRequest(for: endpoint)!
+        StubURLProtocol.set(error: error, for: urlRequest)
+    }
+
     func whenInvokeEndpoint<E: Endpoint>(
         _ endpoint: E,
         then: @escaping (Cancellable?, WebClient.Result<E>) -> Void
@@ -77,11 +88,7 @@ class WebClientTests: XCTestCase {
     func testInvokeEndpoint_URLRequestSucceeds_DataAndResponseAreCorrect() {
         let endpoint = StubEndpoint(urlRequest: Constant.someURLRequest)
 
-        StubURLProtocol.set(
-            data: Constant.someData,
-            response: HTTPURLResponse(url: endpoint.url!, statusCode: 200),
-            forRequest: endpoint.urlRequest!
-        )
+        given(data: Constant.someData, statusCode: 200, for: endpoint)
 
         whenInvokeEndpoint(endpoint) { (_, result) in
             XCTAssertEqual(result.success?.data, Constant.someData)
@@ -95,11 +102,7 @@ class WebClientTests: XCTestCase {
             behaviour: .fail(StubEndpoint.Error.someError)
         )
 
-        StubURLProtocol.set(
-            data: Constant.someData,
-            response: HTTPURLResponse(url: endpoint.url!),
-            forRequest: endpoint.urlRequest!
-        )
+        given(data: Constant.someData, statusCode: 200, for: endpoint)
 
         whenInvokeEndpoint(endpoint) { (_, result) in
             XCTAssertEqual(result.failure, .failedToDecodeData(StubEndpoint.Error.someError))
@@ -109,11 +112,7 @@ class WebClientTests: XCTestCase {
     func testInvokeEndpoint_URLResponseIsNil_ResultIsURLResponseIsUnexpected() {
         let endpoint = StubEndpoint(urlRequest: Constant.someURLRequest)
 
-        StubURLProtocol.set(
-            data: Constant.someData,
-            response: nil,
-            forRequest: endpoint.urlRequest!
-        )
+        given(data: Constant.someData, statusCode: nil, for: endpoint)
 
         whenInvokeEndpoint(endpoint) { (_, result) in
             XCTAssertEqual(result.failure, .urlResponseIsUnexpected)
@@ -123,7 +122,7 @@ class WebClientTests: XCTestCase {
     func testInvokeEndpoint_URLRequestFails_ResultIsDataTaskFailedWithError() {
         let endpoint = StubEndpoint(urlRequest: Constant.someURLRequest)
 
-        StubURLProtocol.set(error: Constant.someError, forRequest: endpoint.urlRequest!)
+        given(error: Constant.someError, for: endpoint)
 
         whenInvokeEndpoint(endpoint) { (_, result) in
             if case let .dataTaskFailedWithError(error) = result.failure {
@@ -133,6 +132,23 @@ class WebClientTests: XCTestCase {
                 XCTFail()
             }
         }
+    }
+
+    func testInvokeEndpoint_AdditionalHeadersAreSet_CompletedRequestHasCorrectHeaders() {
+        let headerFields = ["FIELD_1": "VALUE_1", "FIELD_2": "VALUE_2"]
+        webClient.additionalHeaders = headerFields
+
+        let endpoint = StubEndpoint(urlRequest: Constant.someURLRequest)
+
+        given(data: Constant.someData, statusCode: 200, for: endpoint)
+        
+        whenInvokeEndpoint(endpoint) { (_, result) in
+            XCTAssertEqual(
+                StubURLProtocol.completedRequests.first?.allHTTPHeaderFields,
+                headerFields
+            )
+        }
+
     }
 
 }

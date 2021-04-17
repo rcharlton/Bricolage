@@ -24,12 +24,15 @@ public class WebClient {
 
     public typealias Result<E: Endpoint> = Swift.Result<E.Success, Error<E>>
 
+    /// Header fields to set on all endpoint URL requests.
+    public var additionalHeaders: [String: String] = [:]
+
     private let serviceURL: URL
     private let urlSession: URLSession
 
     public init(
         serviceURL: URL,
-        urlSessionConfiguration: URLSessionConfiguration
+        urlSessionConfiguration: URLSessionConfiguration = .default
     ) {
         self.serviceURL = serviceURL
         self.urlSession = URLSession(configuration: urlSessionConfiguration)
@@ -46,7 +49,7 @@ public class WebClient {
         endpoint: E,
         completionHandler: @escaping (Result<E>) -> Void
     ) -> Cancellable? {
-        guard let urlRequest = endpoint.urlRequest(relativeTo: serviceURL) else {
+        guard let urlRequest = urlRequest(for: endpoint) else {
             completionHandler(.failure(.misconfiguredEndpoint(endpoint)))
             return nil
         }
@@ -58,8 +61,21 @@ public class WebClient {
 
             completionHandler(result)
         }
+
         task.resume()
         return task
+    }
+
+
+    public func urlRequest<E: Endpoint>(for endpoint: E) -> URLRequest? {
+        endpoint.urlRequest(relativeTo: serviceURL)
+            .map {
+                configure($0) { urlRequest in
+                    additionalHeaders.forEach {
+                        urlRequest.setValue($0.1, forHTTPHeaderField: $0.0)
+                    }
+                }
+            }
     }
 
 }

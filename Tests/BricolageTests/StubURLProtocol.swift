@@ -25,17 +25,19 @@ class StubURLProtocol: URLProtocol {
 
     }
 
+    static var completedRequests: [URLRequest] = []
+
     /// The stubbed results keyed by the request.
-    private static var resultByRequest = [URLRequest: Result]()
+    private static var resultByRequest = [Int: Result]()
 
     // MARK: -
 
-    static func set(data: Data? = nil, response: URLResponse?, forRequest request: URLRequest) {
-        resultByRequest[request] = Result(data: data, response: response)
+    static func set(data: Data? = nil, response: URLResponse?, for request: URLRequest) {
+        resultByRequest[request.hashValue] = Result(data: data, response: response)
     }
 
-    static func set(error: Swift.Error, forRequest request: URLRequest) {
-        resultByRequest[request] = Result(error: error)
+    static func set(error: Swift.Error, for request: URLRequest) {
+        resultByRequest[request.hashValue] = Result(error: error)
     }
 
     static func clear() {
@@ -55,7 +57,7 @@ class StubURLProtocol: URLProtocol {
     override func startLoading() {
         guard let client = self.client else { return }
 
-        guard let result = StubURLProtocol.resultByRequest[request] else {
+        guard let result = Self.resultByRequest[request.hashValue] else {
             client.urlProtocol(self, didFailWithError: Error.missingResultForRequest(request))
             return
         }
@@ -71,6 +73,8 @@ class StubURLProtocol: URLProtocol {
         }
 
         client.urlProtocolDidFinishLoading(self)
+
+        Self.completedRequests.append(request)
     }
 
     override func stopLoading() {
@@ -85,10 +89,10 @@ extension StubURLProtocol {
     static func set<Model: Encodable>(
         model: Model,
         response: URLResponse?,
-        forRequest request: URLRequest
+        for request: URLRequest
     ) throws {
         let data = try JSONEncoder().encode(model)
-        set(data: data, response: response, forRequest: request)
+        set(data: data, response: response, for: request)
     }
 
 }
