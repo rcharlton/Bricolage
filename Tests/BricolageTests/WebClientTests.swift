@@ -72,7 +72,7 @@ class WebClientTests: XCTestCase {
         whenInvokeEndpoint(endpoint) { (_, result) in
             XCTAssertEqual(
                 result.failure,
-                WebClient.Error<StubEndpoint>.misconfiguredEndpoint(endpoint)
+                WebClient.Error<StubEndpoint>.endpointIsMisconfigured(endpoint)
             )
         }
     }
@@ -105,7 +105,7 @@ class WebClientTests: XCTestCase {
         given(data: Constant.someData, statusCode: 200, for: endpoint)
 
         whenInvokeEndpoint(endpoint) { (_, result) in
-            XCTAssertEqual(result.failure, .failedToDecodeData(StubEndpoint.Error.someError))
+            XCTAssertEqual(result.failure, .decodeFailedWithError(StubEndpoint.Error.someError))
         }
     }
 
@@ -159,9 +159,9 @@ extension WebClient.Error: Equatable where E.Failure: Equatable {
         switch (lhs, rhs) {
         case let (.dataTaskFailedWithError(lhsError), .dataTaskFailedWithError(rhsError)):
             return lhsError == rhsError
-        case let (.failedToDecodeData(lhsError), .failedToDecodeData(rhsError)):
+        case let (.decodeFailedWithError(lhsError), .decodeFailedWithError(rhsError)):
             return lhsError == rhsError
-        case let (.misconfiguredEndpoint(lhsEndpoint), .misconfiguredEndpoint(rhsEndpoint)):
+        case let (.endpointIsMisconfigured(lhsEndpoint), .endpointIsMisconfigured(rhsEndpoint)):
             return type(of: lhsEndpoint) == type(of: rhsEndpoint)
         case (.urlResponseIsUnexpected, .urlResponseIsUnexpected):
             return true

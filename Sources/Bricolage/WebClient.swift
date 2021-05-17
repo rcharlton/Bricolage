@@ -12,10 +12,10 @@ public class WebClient {
         case dataTaskFailedWithError(NSError)
 
         /// Failed to decode body data into expected model type.
-        case failedToDecodeData(E.Failure)
+        case decodeFailedWithError(E.Failure)
 
         /// The endpoint was unable to provide a valid URL.
-        case misconfiguredEndpoint(E)
+        case endpointIsMisconfigured(E)
 
         /// A problem with Foundation exists; this error cannot occur.
         case urlResponseIsUnexpected
@@ -50,7 +50,7 @@ public class WebClient {
         completionHandler: @escaping (Result<E>) -> Void
     ) -> Cancellable? {
         guard let urlRequest = urlRequest(for: endpoint) else {
-            completionHandler(.failure(.misconfiguredEndpoint(endpoint)))
+            completionHandler(.failure(.endpointIsMisconfigured(endpoint)))
             return nil
         }
 
@@ -104,6 +104,6 @@ private func decodeData<E: Endpoint>(
 ) -> (Data?, HTTPURLResponse) -> WebClient.Result<E> {
     { (data, response) in
         endpoint.decodeData(data, for: response)
-            .mapError { WebClient.Error<E>.failedToDecodeData($0) }
+            .mapError { WebClient.Error<E>.decodeFailedWithError($0) }
     }
 }
