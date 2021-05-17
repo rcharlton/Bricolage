@@ -7,7 +7,7 @@ import XCTest
 
 class WebClientTests: XCTestCase {
 
-    private enum Constant {
+    enum Constant {
         static let serviceURL = URL(string: "A://SERVICE_URL")!
         static let someURLRequest = URLRequest(url: URL(string: "A://REQUEST_URL")!)
         static let someData = "DATA".data(using: .utf8)!
