@@ -13,9 +13,20 @@ let label = configure(UILabel()) {
 }
 ```
 
+## Swift.Result extensions
+```swift
+let result: Result<String, Error> = .success("Magrathea")
+
+if result.success == "Magrathea" {
+}
+
+if let error = result.failure {
+}
+```
+
 ## WebClient: a simple URLSession wrapper
 ```swift
-struct SearchEndpoint: BasicEndpoint {
+struct SearchGuideEndpoint: BasicEndpoint {
 
     typealias Success = GuideEntry
     typealias Failure = StatusCodeResponseDecodingError<GuideError>
@@ -39,7 +50,7 @@ struct SearchEndpoint: BasicEndpoint {
 }
 
 let webClient = WebClient(serviceURL: URL(string: "hitchhikersguide.com/api")!)
-let searchEndpoint = SearchEndpoint(queryString: "themeaningoflifeuniverseandeverything")
-let canceller = webClient.invoke(someEndpoint) { result in 
+let searchQuery = SearchGuideEndpoint(queryString: "themeaningoflifeuniverseandeverything")
+let canceller = webClient.invoke(searchQuery) { result in 
 }
 ```
