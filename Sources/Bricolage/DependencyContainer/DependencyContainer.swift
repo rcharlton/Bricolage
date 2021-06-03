@@ -2,6 +2,8 @@
 // Copyright © 2021 Robin Charlton. All rights reserved.
 //
 
+// TODO: add instance lifetime management & sharing
+
 /// A general purpose container for storing and resolving type dependencies.
 public class DependencyContainer: DependencyResolving, DependencyRegistering {
 
