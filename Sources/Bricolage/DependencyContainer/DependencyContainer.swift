@@ -34,6 +34,9 @@ public class DependencyContainer: DependencyResolving, DependencyRegistering {
 
     private var resolvers: [Key: Any] = [:]
 
+    public init() {
+    }
+
     public func resolve<Resolved, Registrant, Parameters>(
         _ type: Resolved.Type,
         using registrant: Registrant,
