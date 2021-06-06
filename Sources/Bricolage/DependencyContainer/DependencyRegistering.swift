@@ -46,7 +46,7 @@ enum Constant {
 
 public extension DependencyRegistering {
 
-    /// Register with default options.
+    /// Register with default options [.shared, .retained].
     func register<Resolved, Registrant: Hashable, Parameters>(
         _ registrant: Registrant,
         type: Resolved.Type,
