@@ -6,7 +6,7 @@ import Foundation
 import XCTest
 @testable import Bricolage
 
-class Result_HelpersTests : XCTestCase {
+class Result_HelpersTests: XCTestCase {
 
     private enum Constant {
         static let someValue = "VALUE"

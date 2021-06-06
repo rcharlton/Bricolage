@@ -5,19 +5,24 @@
 import XCTest
 @testable import Bricolage
 
-class DependencyResolverTests : XCTestCase {
+private protocol AbstractType {
+}
+
+private class ConcreteType: AbstractType {
+}
+
+class DependencyResolverTests: XCTestCase {
 
     func test() throws {
         let container = DependencyContainer()
-        try container.register("TestResolver", type: AbstractType.self) { (resolver, parameters: Void) in
+        try container.register(
+            "TestResolver",
+            type: AbstractType.self,
+            options: []
+        ) { (resolver, parameters: Void) in
             ConcreteType()
         }
         _ = try container.resolve(AbstractType.self, using: "TestResolver", parameters: ())
     }
 }
 
-private protocol AbstractType {
-}
-
-private class ConcreteType: AbstractType {
-}

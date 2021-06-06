@@ -5,7 +5,7 @@
 import XCTest
 @testable import Bricolage
 
-class ConfigureTests : XCTestCase {
+class ConfigureTests: XCTestCase {
 
     private class ReferenceType {
         var value: String

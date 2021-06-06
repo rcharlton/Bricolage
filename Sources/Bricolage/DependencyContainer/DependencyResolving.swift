@@ -16,7 +16,7 @@ public protocol DependencyResolving {
          parameters: [UserService.Option.one]
      )
      */
-    func resolve<Resolved, Registrant: Hashable, Parameters>(
+    func resolve<Resolved: AnyObject, Registrant: Hashable, Parameters>(
         _ type: Resolved.Type,
         using registrant: Registrant,
         parameters: Parameters
@@ -24,3 +24,28 @@ public protocol DependencyResolving {
 
 }
 
+extension DependencyResolving {
+
+    /// Resolve without parameters
+    func resolve<Resolved: AnyObject, Registrant: Hashable>(
+        _ type: Resolved.Type,
+        using registrant: Registrant
+    ) throws -> Resolved {
+        try resolve(type, using: registrant, parameters: ())
+    }
+
+    /// Resolve without parameters and using default registrant.
+    func resolve<Resolved: AnyObject>(_ type: Resolved.Type) throws -> Resolved {
+        try resolve(type, using: Constant.defaultRegistrant, parameters: ())
+    }
+
+    /// Resolve using default registrant.
+    func resolve<Resolved: AnyObject, Registrant: Hashable, Parameters>(
+        _ type: Resolved.Type,
+        using registrant: Registrant,
+        parameters: Parameters
+    ) throws -> Resolved {
+        try resolve(type, using: Constant.defaultRegistrant, parameters: parameters)
+    }
+
+}
