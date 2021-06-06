@@ -4,6 +4,17 @@ A Swift Package containing a somewhat random assortment of useful Swift types.
 
 Wholly incomplete documentation follows...
 
+## Clamped
+Constrains a value within a given range.
+
+```swift
+Int(0).clamped(-10...10) // = 0
+Int(-99).clamped(-10...10) // = -10
+Int(99).clamped(-10...10) // = 10
+
+Int(99).clamped(-10..<10) // = 9
+```
+
 ## Configure
 ```swift
 let label = configure(UILabel()) {
