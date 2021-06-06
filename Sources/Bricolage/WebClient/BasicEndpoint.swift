@@ -83,5 +83,3 @@ public enum StatusCodeResponseDecodingError<FailureDetails>: Error {
     case failedToDecodeType(String, error: Swift.Error)
 
 }
-
-
