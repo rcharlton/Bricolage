@@ -7,9 +7,9 @@ import XCTest
 
 class ReferenceTests: XCTestCase {
 
-    private var strong: P? = C()
+    private var strong: Protocol? = Class()
 
-    private var value: P {
+    private var value: Protocol {
         strong!
     }
 
@@ -18,7 +18,7 @@ class ReferenceTests: XCTestCase {
     }
 
     func testReleaseOtherReferences_StrongReference_InstanceIsNotNil() {
-        let reference = Reference<P>.strong(value)
+        let reference = Reference<Protocol>.strong(value)
         XCTAssertNotNil(reference.instance)
 
         releaseOtherReferences()
@@ -27,7 +27,7 @@ class ReferenceTests: XCTestCase {
     }
 
     func testReleaseOtherReferences_WeakReference_InstanceIsNil() {
-        let reference = Reference<P>.weak(value)
+        let reference = Reference<Protocol>.weak(value)
         XCTAssertNotNil(reference.instance)
 
         releaseOtherReferences()
@@ -37,6 +37,6 @@ class ReferenceTests: XCTestCase {
 
 }
 
-private protocol P { }
+private protocol Protocol { }
 
-private class C: P { }
+private class Class: Protocol { }

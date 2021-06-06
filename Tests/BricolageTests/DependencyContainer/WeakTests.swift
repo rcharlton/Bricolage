@@ -8,8 +8,8 @@ import XCTest
 class WeakTests: XCTestCase {
 
     func testReleaseOtherReferences_WeakReference_InstanceIsNil() {
-        var strong: C? = C()
-        let weak = Weak<P>(strong!)
+        var strong: Class? = Class()
+        let weak = Weak<Protocol>(strong!)
         XCTAssertNotNil(weak.instance)
 
         strong = nil
@@ -19,6 +19,6 @@ class WeakTests: XCTestCase {
 
 }
 
-private protocol P { }
+private protocol Protocol { }
 
-private class C: P { }
+private class Class: Protocol { }

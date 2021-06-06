@@ -2,7 +2,7 @@
 // Copyright © 2021 Robin Charlton. All rights reserved.
 //
 
-// TODO: convenience methods
+// TODO: eliminate Parameters capability?
 
 /// A general purpose container for storing and resolving type dependencies.
 public class DependencyContainer: DependencyResolving, DependencyRegistering {
