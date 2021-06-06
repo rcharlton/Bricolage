@@ -2,7 +2,7 @@
 // Copyright © 2021 Robin Charlton. All rights reserved.
 //
 
-extension Result {
+public extension Result {
 
     var success: Success? {
         if case let .success(success) = self {
