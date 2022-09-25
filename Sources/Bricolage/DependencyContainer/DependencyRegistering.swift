@@ -30,8 +30,8 @@ public protocol DependencyRegistering {
     }
     */
     func register<Resolved, Registrant: Hashable, Parameters>(
-        _ registrant: Registrant,
-        type: Resolved.Type,
+        _ type: Resolved.Type,
+        registrant: Registrant,
         options: ResolvingOptions,
         resolver: @escaping Resolver<Resolved, Parameters>
     ) throws
@@ -48,11 +48,11 @@ public extension DependencyRegistering {
 
     /// Register with default options [.shared, .retained].
     func register<Resolved, Registrant: Hashable, Parameters>(
-        _ registrant: Registrant,
-        type: Resolved.Type,
+        _ type: Resolved.Type,
+        registrant: Registrant,
         resolver: @escaping Resolver<Resolved, Parameters>
     ) throws {
-        try register(Constant.defaultRegistrant, type: type, options: .default, resolver: resolver)
+        try register(type, registrant: Constant.defaultRegistrant, options: .default, resolver: resolver)
     }
 
     /// Register with default registrant.
@@ -61,7 +61,7 @@ public extension DependencyRegistering {
         options: ResolvingOptions,
         resolver: @escaping Resolver<Resolved, Parameters>
     ) throws {
-        try register(Constant.defaultRegistrant, type: type, options: options, resolver: resolver)
+        try register(type, registrant: Constant.defaultRegistrant, options: options, resolver: resolver)
     }
 
     /// Register with default registrant and options.
@@ -69,23 +69,23 @@ public extension DependencyRegistering {
         _ type: Resolved.Type,
         resolver: @escaping Resolver<Resolved, Parameters>
     ) throws {
-        try register(Constant.defaultRegistrant, type: type, options: .default, resolver: resolver)
+        try register(type, registrant: Constant.defaultRegistrant, options: .default, resolver: resolver)
     }
 
     /// Register instance.
     func register<Resolved, Registrant: Hashable>(
-        _ registrant: Registrant,
-        type: Resolved.Type,
+        _ type: Resolved.Type,
+        registrant: Registrant,
         instance: Resolved
     ) throws {
-        try register(registrant, type: type, options: [.shared, .retained]) { (_, _: Void) in
+        try register(type, registrant: registrant, options: [.shared, .retained]) { (_, _: Void) in
             instance
         }
     }
 
     /// Register instance with default registrant.
     func register<Resolved>(type: Resolved.Type, instance: Resolved) throws {
-        try register(Constant.defaultRegistrant, type: type, instance: instance)
+        try register(type, registrant: Constant.defaultRegistrant, instance: instance)
     }
 
 }

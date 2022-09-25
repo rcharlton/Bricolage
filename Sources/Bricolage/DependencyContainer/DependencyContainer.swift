@@ -2,8 +2,6 @@
 // Copyright © 2021 Robin Charlton. All rights reserved.
 //
 
-// TODO: eliminate Parameters capability?
-
 /// A general purpose container for storing and resolving type dependencies.
 public class DependencyContainer: DependencyResolving, DependencyRegistering {
 
@@ -13,23 +11,21 @@ public class DependencyContainer: DependencyResolving, DependencyRegistering {
     }
 
     private struct Key: Hashable {
-
         let resolvedType: Any.Type
-        let parametersType: Any.Type
         let registrant: AnyHashable
+        let parametersType: Any.Type
 
         static func == (lhs: Key, rhs: Key) -> Bool {
             lhs.resolvedType == rhs.resolvedType
-                && lhs.parametersType == rhs.parametersType
                 && lhs.registrant == rhs.registrant
+                && lhs.parametersType == rhs.parametersType
         }
 
         public func hash(into hasher: inout Hasher) {
-            ObjectIdentifier(resolvedType).hash(into: &hasher)
-            ObjectIdentifier(parametersType).hash(into: &hasher)
-            registrant.hash(into: &hasher)
+            hasher.combine(ObjectIdentifier(resolvedType))
+            hasher.combine(registrant)
+            hasher.combine(ObjectIdentifier(parametersType))
         }
-
     }
 
     private class Coordinator<Resolved, Parameters> {
@@ -69,7 +65,7 @@ public class DependencyContainer: DependencyResolving, DependencyRegistering {
         using registrant: Registrant,
         parameters: Parameters
     ) throws -> Resolved {
-        let key = Key(resolvedType: type, parametersType: Parameters.self, registrant: registrant)
+        let key = Key(resolvedType: type, registrant: registrant, parametersType: Parameters.self)
         guard let coordinator = coordinators[key] as? Coordinator<Resolved, Parameters> else {
             throw Error.missingRegistrantForType(type)
         }
@@ -77,12 +73,12 @@ public class DependencyContainer: DependencyResolving, DependencyRegistering {
     }
 
     public func register<Resolved, Registrant: Hashable, Parameters>(
-        _ registrant: Registrant,
-        type: Resolved.Type,
+        _ type: Resolved.Type,
+        registrant: Registrant,
         options: ResolvingOptions,
         resolver: @escaping Resolver<Resolved, Parameters>
     ) throws {
-        let key = Key(resolvedType: type, parametersType: Parameters.self, registrant: registrant)
+        let key = Key(resolvedType: type, registrant: registrant, parametersType: Parameters.self)
         guard coordinators[key] == nil else {
             throw Error.existingRegistrantForType(type)
         }

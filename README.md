@@ -82,19 +82,6 @@ let instanceA = try container.resolve(someProtocol.self, using: Traits.variantA)
 let instanceB = try container.resolve(someProtocol.self, using: Traits.variantB)
 ```
 
-Instances can be shared but NOT retained so their lifetimes match the consumers' use:
-```swift
-let container = DependencyContainer()
-try container.register(
-    someProtocol.self, 
-    options: [.shared]
-) { (resolver: DependencyResolving, parameters: SomeStruct) in
-    try ClassA(with: resolver, parameters)
-}
-...
-let instance = try container.resolve(someProtocol.self)
-```
-
 Instances can be re-instantiated for each resolution:
 ```swift
 let container = DependencyContainer()
@@ -109,6 +96,20 @@ let instance1 = try container.resolve(someProtocol.self)
 let instance2 = try container.resolve(someProtocol.self)
 let instance3 = try container.resolve(someProtocol.self)
 ```
+
+Instances can be shared but NOT retained so their lifetimes match the consumers' use:
+```swift
+let container = DependencyContainer()
+try container.register(
+    someProtocol.self, 
+    options: [.shared]
+) { (resolver: DependencyResolving, parameters: SomeStruct) in
+    try ClassA(with: resolver, parameters)
+}
+...
+var instance = try container.resolve(someProtocol.self)
+```
+
 ## Swift.Result Helpers
 Exception-free accessors for the success and failure associated values.
 

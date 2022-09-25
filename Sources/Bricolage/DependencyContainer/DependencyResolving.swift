@@ -4,17 +4,17 @@
 
 public protocol DependencyResolving {
 
-    /**
-     enum Resolver: Hashable {
-        case remoteUserService
-        case cachedUserService
-     }
+    /** Example:
+         enum Resolver: Hashable {
+            case remoteUserService
+            case cachedUserService
+         }
 
-     let userService = try resolve(
-         UserService.self,
-         using: Resolver.cachedUserService,
-         parameters: [UserService.Option.one]
-     )
+         let userService = try resolve(
+             UserService.self,
+             using: Resolver.cachedUserService,
+             parameters: [Option.restoreCredentials]
+         )
      */
     func resolve<Resolved: AnyObject, Registrant: Hashable, Parameters>(
         _ type: Resolved.Type,
@@ -24,7 +24,7 @@ public protocol DependencyResolving {
 
 }
 
-extension DependencyResolving {
+public extension DependencyResolving {
 
     /// Resolve without parameters
     func resolve<Resolved: AnyObject, Registrant: Hashable>(
@@ -34,17 +34,17 @@ extension DependencyResolving {
         try resolve(type, using: registrant, parameters: ())
     }
 
-    /// Resolve without parameters and using default registrant.
-    func resolve<Resolved: AnyObject>(_ type: Resolved.Type) throws -> Resolved {
-        try resolve(type, using: Constant.defaultRegistrant, parameters: ())
-    }
-
-    /// Resolve using default registrant.
+    /// Resolve without registrant.
     func resolve<Resolved: AnyObject, Parameters>(
         _ type: Resolved.Type,
         parameters: Parameters
     ) throws -> Resolved {
         try resolve(type, using: Constant.defaultRegistrant, parameters: parameters)
+    }
+
+    /// Resolve without parameters and or registrant.
+    func resolve<Resolved: AnyObject>(_ type: Resolved.Type) throws -> Resolved {
+        try resolve(type, using: Constant.defaultRegistrant, parameters: ())
     }
 
 }

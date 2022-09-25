@@ -11,24 +11,24 @@ class DependencyContainerTests: XCTestCase {
 
     override func setUpWithError() throws {
         try container.register(
-            Resolver.one,
-            type: ProtocolA.self,
+            ProtocolA.self,
+            registrant: Resolver.one,
             options: []
         ) { (_, parameters: String) in
             SpyA(resolver: Resolver.one, parameters: parameters)
         }
 
         try container.register(
-            Resolver.two,
-            type: ProtocolA.self,
+            ProtocolA.self,
+            registrant: Resolver.two,
             options: [.shared]
         ) { (_, parameters: String) in
             SpyA(resolver: Resolver.two, parameters: parameters)
         }
 
         try container.register(
-            Resolver.three,
-            type: (ProtocolA & ProtocolB).self,
+            (ProtocolA & ProtocolB).self,
+            registrant: Resolver.three,
             options: [.shared, .retained]
         ) { (_, parameters: String) in
             SpyB(resolver: Resolver.one, parameters: parameters)
