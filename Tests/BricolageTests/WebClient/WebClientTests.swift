@@ -41,12 +41,12 @@ class WebClientTests: XCTestCase {
 
     func whenInvokeEndpoint<E: Endpoint>(
         _ endpoint: E,
-        then: @escaping (Cancellable?, WebClient.Result<E>) -> Void
+        then: @escaping (Cancellable?, InvocationResult<E>) -> Void
     ) {
         let expectation = self.expectation(description: "Task completes")
-        var result: WebClient.Result<E>?
+        var result: InvocationResult<E>?
 
-        let cancellable = webClient.invoke(endpoint: endpoint) { (r: WebClient.Result<E>) in
+        let cancellable = webClient.invoke(endpoint: endpoint) { (r: InvocationResult<E>) in
             result = r
             expectation.fulfill()
         }
@@ -72,7 +72,7 @@ class WebClientTests: XCTestCase {
         whenInvokeEndpoint(endpoint) { (_, result) in
             XCTAssertEqual(
                 result.failure,
-                WebClient.Error<StubEndpoint>.endpointIsMisconfigured(endpoint)
+                InvocationError<StubEndpoint>.endpointIsMisconfigured(endpoint)
             )
         }
     }
@@ -153,9 +153,9 @@ class WebClientTests: XCTestCase {
 
 }
 
-extension WebClient.Error: Equatable where E.Failure: Equatable {
+extension InvocationError: Equatable where E.Failure: Equatable {
 
-    public static func ==(lhs: WebClient.Error<E>, rhs: WebClient.Error<E>) -> Bool {
+    public static func ==(lhs: InvocationError<E>, rhs: InvocationError<E>) -> Bool {
         switch (lhs, rhs) {
         case let (.dataTaskFailedWithError(lhsError), .dataTaskFailedWithError(rhsError)):
             return lhsError == rhsError

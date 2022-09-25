@@ -12,12 +12,12 @@ extension WebClientTests {
 
     func whenInvokeEndpointReturningFuture<E: Endpoint>(
         _ endpoint: E,
-        then: @escaping (WebClient.Result<E>) -> Void
+        then: @escaping (InvocationResult<E>) -> Void
     ) {
         let expectation = self.expectation(description: "Task completes")
         var cancellable: Combine.Cancellable?
 
-        let complete = { (result: WebClient.Result<E>) in
+        let complete = { (result: InvocationResult<E>) in
             _ = cancellable
             cancellable = nil
             expectation.fulfill()
@@ -44,7 +44,7 @@ extension WebClientTests {
         whenInvokeEndpointReturningFuture(endpoint) { result in
             XCTAssertEqual(
                 result.failure,
-                WebClient.Error<StubEndpoint>.endpointIsMisconfigured(endpoint)
+                InvocationError<StubEndpoint>.endpointIsMisconfigured(endpoint)
             )
         }
     }

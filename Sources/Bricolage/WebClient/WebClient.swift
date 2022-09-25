@@ -4,25 +4,7 @@
 
 import Foundation
 
-public class WebClient {
-
-    public indirect enum Error<E: Endpoint>: Swift.Error {
-
-        /// An underlying URL session error such as a dropped connection.
-        case dataTaskFailedWithError(NSError)
-
-        /// Failed to decode body data into expected model type.
-        case decodeFailedWithError(E.Failure)
-
-        /// The endpoint was unable to provide a valid URL.
-        case endpointIsMisconfigured(E)
-
-        /// A problem with Foundation exists; this error cannot occur.
-        case urlResponseIsUnexpected
-
-    }
-
-    public typealias Result<E: Endpoint> = Swift.Result<E.Success, Error<E>>
+public class WebClient: EndpointInvoking {
 
     /// Header fields to set on all endpoint URL requests.
     public var additionalHeaders: [String: String] = [:]
@@ -47,7 +29,7 @@ public class WebClient {
     @discardableResult
     public func invoke<E: Endpoint>(
         endpoint: E,
-        completionHandler: @escaping (Result<E>) -> Void
+        completionHandler: @escaping (InvocationResult<E>) -> Void
     ) -> Cancellable? {
         guard let urlRequest = urlRequest(for: endpoint) else {
             completionHandler(.failure(.endpointIsMisconfigured(endpoint)))
@@ -55,7 +37,7 @@ public class WebClient {
         }
 
         let task = urlSession.dataTask(with: urlRequest) {
-            let result: Result<E> = makeResult(data: $0, response: $1, error: $2)
+            let result: InvocationResult<E> = makeResult(data: $0, response: $1, error: $2)
                 .flatMap(validateResponse)
                 .flatMap(decodeData(for: endpoint))
 
@@ -66,8 +48,7 @@ public class WebClient {
         return task
     }
 
-
-    public func urlRequest<E: Endpoint>(for endpoint: E) -> URLRequest? {
+    func urlRequest<E: Endpoint>(for endpoint: E) -> URLRequest? {
         endpoint.urlRequest(relativeTo: serviceURL)
             .map {
                 configure($0) { urlRequest in
@@ -86,7 +67,7 @@ private func makeResult<E: Endpoint>(
     data: Data?,
     response: URLResponse?,
     error: Error?
-) -> Result<(Data?, URLResponse?), WebClient.Error<E>> {
+) -> Result<(Data?, URLResponse?), InvocationError<E>> {
     error.map { .failure(.dataTaskFailedWithError($0 as NSError)) }
         ?? .success((data, response))
 }
@@ -94,16 +75,16 @@ private func makeResult<E: Endpoint>(
 private func validateResponse<E: Endpoint>(
     data: Data?,
     response: URLResponse?
-) -> Result<(Data?, HTTPURLResponse), WebClient.Error<E>> {
+) -> Result<(Data?, HTTPURLResponse), InvocationError<E>> {
     (response as? HTTPURLResponse).map { .success((data, $0)) }
         ?? .failure(.urlResponseIsUnexpected)
 }
 
 private func decodeData<E: Endpoint>(
     for endpoint: E
-) -> (Data?, HTTPURLResponse) -> WebClient.Result<E> {
+) -> (Data?, HTTPURLResponse) -> InvocationResult<E> {
     { (data, response) in
         endpoint.decodeData(data, for: response)
-            .mapError { WebClient.Error<E>.decodeFailedWithError($0) }
+            .mapError { InvocationError<E>.decodeFailedWithError($0) }
     }
 }

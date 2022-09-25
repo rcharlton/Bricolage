@@ -8,7 +8,7 @@ import Combine
 
 extension WebClient {
 
-    public func invoke<E: Endpoint>(endpoint: E) -> Future<E.Success, Error<E>> {
+    public func invoke<E: Endpoint>(endpoint: E) -> Future<E.Success, InvocationError<E>> {
         Future { promise in
             self.invoke(endpoint: endpoint, completionHandler: promise)
         }
