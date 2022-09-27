@@ -29,13 +29,17 @@ class WebClientTests: XCTestCase {
     // MARK: -
 
     func given<E: Endpoint>(data: Data?, statusCode: Int?, for endpoint: E) {
-        let urlRequest = webClient.urlRequest(for: endpoint)!
-        let response = statusCode.map { HTTPURLResponse(url: urlRequest.url!, statusCode: $0) }
+        guard
+            let urlRequest = webClient.urlRequest(for: endpoint),
+            let url = urlRequest.url
+        else { return }
+
+        let response = statusCode.map { HTTPURLResponse(url: url, statusCode: $0) }
         StubURLProtocol.set(data: data, response: response, for: urlRequest)
     }
 
     func given<E: Endpoint>(error: Error, for endpoint: E) {
-        let urlRequest = webClient.urlRequest(for: endpoint)!
+        guard let urlRequest = webClient.urlRequest(for: endpoint) else { return }
         StubURLProtocol.set(error: error, for: urlRequest)
     }
 
@@ -52,8 +56,8 @@ class WebClientTests: XCTestCase {
         }
 
         waitForExpectations(timeout: 1)
-
-        then(cancellable, result!)
+        guard let result = result else { preconditionFailure("Missing result") }
+        then(cancellable, result)
     }
 
     // MARK: - Invoke using async await

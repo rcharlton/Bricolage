@@ -41,6 +41,7 @@ class StubURLProtocol: URLProtocol {
     }
 
     static func clear() {
+        completedRequests.removeAll()
         resultByRequest.removeAll()
     }
 
