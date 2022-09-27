@@ -43,8 +43,7 @@ public extension StatusCodeResponseDecoding {
 public extension StatusCodeResponseDecoding where Success: Decodable {
 
     func decodeSuccess(from data: Data?) throws -> Success {
-        let data = data ?? Data()
-        return try decoder.decode(Success.self, from: data)
+        try decoder.decode(Success.self, from: data ?? Data())
     }
 
 }
@@ -60,8 +59,7 @@ public extension StatusCodeResponseDecoding where Success == Void {
 public extension StatusCodeResponseDecoding where FailureDetails: Decodable {
 
     func decodeFailureDetails(from data: Data?) throws -> FailureDetails {
-        let data = data ?? Data()
-        return try decoder.decode(FailureDetails.self, from: data)
+        try decoder.decode(FailureDetails.self, from: data ?? Data())
     }
 
 }

@@ -56,7 +56,37 @@ class WebClientTests: XCTestCase {
         then(cancellable, result!)
     }
 
-    // MARK: -
+    // MARK: - Invoke using async await
+
+    func testInvokeAsyncEndpoint_URLRequestSucceeds_DataAndResponseAreCorrect() async throws {
+        let endpoint = StubEndpoint(urlRequest: Constant.someURLRequest)
+        given(data: Constant.someData, statusCode: 200, for: endpoint)
+
+        let success = try await webClient.invoke(endpoint: endpoint)
+
+        XCTAssertEqual(success.data, Constant.someData)
+        XCTAssertEqual(success.response.statusCode, 200)
+    }
+
+    func testInvokeAsyncEndpoint_EndpointFails_ResultIsFailedToDecodeData() async throws {
+        let endpoint = StubEndpoint(
+            urlRequest: Constant.someURLRequest,
+            behaviour: .fail(StubEndpoint.Error.someError)
+        )
+        given(data: Constant.someData, statusCode: 200, for: endpoint)
+
+        var thrownError: InvocationError<StubEndpoint>?
+
+        do {
+            try await webClient.invoke(endpoint: endpoint)
+        } catch {
+            thrownError = error as? InvocationError<StubEndpoint>
+        }
+
+        XCTAssertEqual(thrownError, .decodeFailedWithError(StubEndpoint.Error.someError))
+    }
+
+    // MARK: - Invoke using completion block
 
     func testInvokeEndpoint_URLRequestIsNil_CancellableIsNil() {
         let endpoint = StubEndpoint(urlRequest: nil)

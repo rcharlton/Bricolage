@@ -25,6 +25,9 @@ public typealias InvocationResult<E: Endpoint> = Result<E.Success, InvocationErr
 public protocol EndpointInvoking {
 
     @discardableResult
+    func invoke<E: Endpoint>(endpoint: E) async throws -> E.Success
+
+    @discardableResult
     func invoke<E: Endpoint>(
         endpoint: E,
         completionHandler: @escaping (InvocationResult<E>) -> Void

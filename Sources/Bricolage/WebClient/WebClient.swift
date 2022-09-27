@@ -20,6 +20,20 @@ public class WebClient: EndpointInvoking {
         self.urlSession = URLSession(configuration: urlSessionConfiguration)
     }
 
+    @discardableResult
+    public func invoke<E: Endpoint>(endpoint: E) async throws -> E.Success {
+        try await withCheckedThrowingContinuation { continuation in
+            invoke(endpoint: endpoint) { (result: InvocationResult<E>) in
+                switch result {
+                case let .success(value):
+                    continuation.resume(returning: value)
+                case let .failure(error):
+                    continuation.resume(throwing: error)
+                }
+            }
+        }
+    }
+
     /// Starts a URLSessionDataTask for the given endpoint.
     /// - Parameters:
     ///   - endpoint: The endpoint to call.
