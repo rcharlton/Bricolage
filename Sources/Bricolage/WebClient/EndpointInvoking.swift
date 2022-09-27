@@ -9,28 +9,23 @@ public enum EndpointError<E: Endpoint>: Error {
     /// An underlying URL session error such as a dropped connection.
     case dataTaskFailedWithError(NSError)
 
-    /// Failed to decode body data into expected model type.
-    case decodeFailedWithError(E.Failure)
-
     /// The endpoint was unable to provide a valid URL.
     case endpointIsMisconfigured(E)
+
+    /// Failed to decode body data into expected model type.
+    case failedToDecodeType(String, error: Error)
+
+    /// HTTP response status code indicates failure.
+    case statusCodeIsFailure(Int, error: E.Failure?)
 
     /// A problem with Foundation exists; this error cannot occur.
     case urlResponseIsUnexpected
 
 }
 
-public typealias EndpointResult<E: Endpoint> = Result<E.Success, EndpointError<E>>
-
 public protocol EndpointInvoking {
 
     @discardableResult
     func invoke<E: Endpoint>(endpoint: E) async throws -> E.Success
-
-    @discardableResult
-    func invoke<E: Endpoint>(
-        endpoint: E,
-        completionHandler: @escaping (EndpointResult<E>) -> Void
-    ) -> Cancellable?
 
 }

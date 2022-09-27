@@ -1,5 +1,8 @@
 //
-// Copyright © 2021 Robin Charlton. All rights reserved.
+//  File.swift
+//  
+//
+//  Created by Robin Charlton on 27/09/2022.
 //
 
 import XCTest
@@ -8,11 +11,13 @@ import XCTest
 class WebClientTests: XCTestCase {
 
     enum Constant {
-        static let serviceURL = URL(string: "A://SERVICE_URL")!
-        static let someURLRequest = URLRequest(url: URL(string: "A://REQUEST_URL")!)
+        static let serviceURL = URL(string: "SERVICE://URL")!
+        static let requestURL = URL(string: "REQUEST://URL")!
         static let someData = "DATA".data(using: .utf8)!
         static let someError = NSError(domain: "DOMAIN", code: 123)
     }
+
+    typealias StubEndpointError = EndpointError<StubEndpoint>
 
     var webClient: WebClient!
 
@@ -28,7 +33,7 @@ class WebClientTests: XCTestCase {
 
     // MARK: -
 
-    func given<E: Endpoint>(data: Data?, statusCode: Int?, for endpoint: E) {
+    func given<E: Endpoint>(data: Data?, statusCode: Int? = 200, for endpoint: E) {
         guard
             let urlRequest = webClient.urlRequest(for: endpoint),
             let url = urlRequest.url
@@ -43,27 +48,67 @@ class WebClientTests: XCTestCase {
         StubURLProtocol.set(error: error, for: urlRequest)
     }
 
-    func whenInvokeEndpoint<E: Endpoint>(
-        _ endpoint: E,
-        then: @escaping (Cancellable?, EndpointResult<E>) -> Void
-    ) {
-        let expectation = self.expectation(description: "Task completes")
-        var result: EndpointResult<E>?
+    // MARK: -
 
-        let cancellable = webClient.invoke(endpoint: endpoint) { (r: EndpointResult<E>) in
-            result = r
-            expectation.fulfill()
+    func testInvoke_URLRequestIsNil_ThrowsEndpointIsMisconfigured() async throws {
+        let endpoint = StubEndpoint(url: nil)
+        given(data: Constant.someData, for: endpoint)
+
+        do {
+            try await webClient.invoke(endpoint: endpoint)
+            XCTFail("Failure expected")
+        } catch EndpointError<StubEndpoint>.endpointIsMisconfigured(endpoint) {
+        } catch {
+            XCTFail("Unexpected error")
         }
-
-        waitForExpectations(timeout: 1)
-        guard let result = result else { preconditionFailure("Missing result") }
-        then(cancellable, result)
     }
 
-    // MARK: - Invoke using async await
+    func testInvoke_URLRequestFails_ThrowsDataTaskFailedWithError() async throws {
+        let endpoint = StubEndpoint(url: Constant.requestURL)
+        let nsError = NSError(domain: "WebClient", code: 123)
+        given(error: nsError, for: endpoint)
 
-    func testInvokeAsyncEndpoint_URLRequestSucceeds_DataAndResponseAreCorrect() async throws {
-        let endpoint = StubEndpoint(urlRequest: Constant.someURLRequest)
+        do {
+            try await webClient.invoke(endpoint: endpoint)
+            XCTFail("Failure expected")
+        } catch let StubEndpointError.dataTaskFailedWithError(error) {
+            XCTAssertEqual(error.domain, nsError.domain)
+            XCTAssertEqual(error.code, nsError.code)
+        } catch {
+            XCTFail("Unexpected error")
+        }
+    }
+
+    func testInvoke_DecodingSuccessFails_ThrowsFailedToDecodeType() async throws {
+        let endpoint = StubEndpoint(url: Constant.requestURL, decodingError: StubError.someError)
+        given(data: Constant.someData, statusCode: 200, for: endpoint)
+
+        do {
+            try await webClient.invoke(endpoint: endpoint)
+            XCTFail("Failure expected")
+        } catch let StubEndpointError.failedToDecodeType(_, error) {
+            XCTAssertEqual(error as? StubError, StubError.someError)
+        } catch {
+            XCTFail("Unexpected error")
+        }
+    }
+
+    func testInvoke_StatusCodeIsFailure_DataAndResponseAreCorrect() async throws {
+        let endpoint = StubEndpoint(url: Constant.requestURL)
+        given(data: Constant.someData, statusCode: 500, for: endpoint)
+
+        do {
+            try await webClient.invoke(endpoint: endpoint)
+        } catch let StubEndpointError.statusCodeIsFailure(500, error: error) {
+            XCTAssertEqual(error?.data, Constant.someData)
+            XCTAssertEqual(error?.response.statusCode, 500)
+       } catch {
+            XCTFail("Unexpected error")
+        }
+    }
+
+    func testInvoke_StatusCodeIsSuccess_DataAndResponseAreCorrect() async throws {
+        let endpoint = StubEndpoint(url: Constant.requestURL)
         given(data: Constant.someData, statusCode: 200, for: endpoint)
 
         let success = try await webClient.invoke(endpoint: endpoint)
@@ -72,136 +117,19 @@ class WebClientTests: XCTestCase {
         XCTAssertEqual(success.response.statusCode, 200)
     }
 
-    func testInvokeAsyncEndpoint_EndpointFails_ResultIsFailedToDecodeData() async throws {
-        let endpoint = StubEndpoint(
-            urlRequest: Constant.someURLRequest,
-            behaviour: .fail(StubEndpoint.Error.someError)
-        )
-        given(data: Constant.someData, statusCode: 200, for: endpoint)
-
-        var thrownError: EndpointError<StubEndpoint>?
-
-        do {
-            try await webClient.invoke(endpoint: endpoint)
-        } catch {
-            thrownError = error as? EndpointError<StubEndpoint>
-        }
-
-        XCTAssertEqual(thrownError, .decodeFailedWithError(StubEndpoint.Error.someError))
-    }
-
-    // MARK: - Invoke using completion block
-
-    func testInvokeEndpoint_URLRequestIsNil_CancellableIsNil() {
-        let endpoint = StubEndpoint(urlRequest: nil)
-
-        whenInvokeEndpoint(endpoint) { (cancellable, _) in
-            XCTAssertNil(cancellable)
-        }
-    }
-
-    func testInvokeEndpoint_URLRequestIsNil_ResultIsMisconfiguredEndpoint() {
-        let endpoint = StubEndpoint(urlRequest: nil)
-
-        whenInvokeEndpoint(endpoint) { (_, result) in
-            XCTAssertEqual(
-                result.failure,
-                EndpointError<StubEndpoint>.endpointIsMisconfigured(endpoint)
-            )
-        }
-    }
-
-    func testInvokeEndpoint_URLRequestIsNotNil_CancellableIsNotNil() {
-        let endpoint = StubEndpoint(urlRequest: Constant.someURLRequest)
-
-        whenInvokeEndpoint(endpoint) { (cancellable, _) in
-            XCTAssertNotNil(cancellable)
-        }
-    }
-
-    func testInvokeEndpoint_URLRequestSucceeds_DataAndResponseAreCorrect() {
-        let endpoint = StubEndpoint(urlRequest: Constant.someURLRequest)
-
-        given(data: Constant.someData, statusCode: 200, for: endpoint)
-
-        whenInvokeEndpoint(endpoint) { (_, result) in
-            XCTAssertEqual(result.success?.data, Constant.someData)
-            XCTAssertEqual(result.success?.response.statusCode, 200)
-        }
-    }
-
-    func testInvokeEndpoint_EndpointFails_ResultIsFailedToDecodeData() throws {
-        let endpoint = StubEndpoint(
-            urlRequest: Constant.someURLRequest,
-            behaviour: .fail(StubEndpoint.Error.someError)
-        )
-
-        given(data: Constant.someData, statusCode: 200, for: endpoint)
-
-        whenInvokeEndpoint(endpoint) { (_, result) in
-            XCTAssertEqual(result.failure, .decodeFailedWithError(StubEndpoint.Error.someError))
-        }
-    }
-
-    func testInvokeEndpoint_URLResponseIsNil_ResultIsURLResponseIsUnexpected() {
-        let endpoint = StubEndpoint(urlRequest: Constant.someURLRequest)
-
-        given(data: Constant.someData, statusCode: nil, for: endpoint)
-
-        whenInvokeEndpoint(endpoint) { (_, result) in
-            XCTAssertEqual(result.failure, .urlResponseIsUnexpected)
-        }
-    }
-
-    func testInvokeEndpoint_URLRequestFails_ResultIsDataTaskFailedWithError() {
-        let endpoint = StubEndpoint(urlRequest: Constant.someURLRequest)
-
-        given(error: Constant.someError, for: endpoint)
-
-        whenInvokeEndpoint(endpoint) { (_, result) in
-            if case let .dataTaskFailedWithError(error) = result.failure {
-                XCTAssertEqual(error.domain, Constant.someError.domain)
-                XCTAssertEqual(error.code, Constant.someError.code)
-            } else {
-                XCTFail()
-            }
-        }
-    }
-
-    func testInvokeEndpoint_AdditionalHeadersAreSet_CompletedRequestHasCorrectHeaders() {
+    func testInvoke_AdditionalHeadersAreSet_CompletedRequestHasCorrectHeaders() async throws {
         let headerFields = ["FIELD_1": "VALUE_1", "FIELD_2": "VALUE_2"]
         webClient.additionalHeaders = headerFields
 
-        let endpoint = StubEndpoint(urlRequest: Constant.someURLRequest)
+        let endpoint = StubEndpoint(url: Constant.requestURL)
+        given(data: Constant.someData, for: endpoint)
 
-        given(data: Constant.someData, statusCode: 200, for: endpoint)
-        
-        whenInvokeEndpoint(endpoint) { (_, result) in
-            XCTAssertEqual(
-                StubURLProtocol.completedRequests.first?.allHTTPHeaderFields,
-                headerFields
-            )
-        }
+        try await webClient.invoke(endpoint: endpoint)
 
-    }
-
-}
-
-extension EndpointError: Equatable where E.Failure: Equatable {
-
-    public static func ==(lhs: EndpointError<E>, rhs: EndpointError<E>) -> Bool {
-        switch (lhs, rhs) {
-        case let (.dataTaskFailedWithError(lhsError), .dataTaskFailedWithError(rhsError)):
-            return lhsError == rhsError
-        case let (.decodeFailedWithError(lhsError), .decodeFailedWithError(rhsError)):
-            return lhsError == rhsError
-        case let (.endpointIsMisconfigured(lhsEndpoint), .endpointIsMisconfigured(rhsEndpoint)):
-            return type(of: lhsEndpoint) == type(of: rhsEndpoint)
-        case (.urlResponseIsUnexpected, .urlResponseIsUnexpected):
-            return true
-        default:
-            return false
-        }
+        XCTAssertEqual(
+            StubURLProtocol.completedRequests.first?.allHTTPHeaderFields,
+            headerFields
+        )
     }
 
 }

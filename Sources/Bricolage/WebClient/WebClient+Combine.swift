@@ -10,7 +10,19 @@ extension WebClient {
 
     public func invoke<E: Endpoint>(endpoint: E) -> Future<E.Success, EndpointError<E>> {
         Future { promise in
-            self.invoke(endpoint: endpoint, completionHandler: promise)
+            typealias Error = EndpointError<E>
+
+            Task {
+                let result: Result<E.Success, Error>
+                do {
+                    result = .success(try await self.invoke(endpoint: endpoint))
+                } catch let failure as Error {
+                    result = .failure(failure)
+                } catch {
+                    preconditionFailure("Unexpected error type")
+                }
+                promise(result)
+            }
         }
     }
 

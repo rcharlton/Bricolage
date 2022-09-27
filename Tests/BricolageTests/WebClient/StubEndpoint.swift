@@ -8,49 +8,54 @@ import Foundation
 /// Stubs provide canned responses to calls during a test.
 struct StubEndpoint: Endpoint {
 
-    enum Error: Equatable, Swift.Error {
-        case someError
-    }
+    typealias Success = (data: Data, response: HTTPURLResponse)
+    typealias Failure = (data: Data, response: HTTPURLResponse)
 
-    typealias Success = (data: Data?, response: HTTPURLResponse)
-    typealias Failure = Error
+    let successStatusCodes: AnyCollection<Int>
 
-    enum Behaviour {
-        case succeedWithInputs
-        case succeed(Data?, HTTPURLResponse)
-        case fail(Error)
-    }
+    private let urlRequest: URLRequest?
 
-    let urlRequest: URLRequest?
+    private let decodingError: Error?
 
-    private let behaviour: Behaviour
-
-    init(urlRequest: URLRequest?, behaviour: Behaviour = .succeedWithInputs) {
-        self.urlRequest = urlRequest
-        self.behaviour = behaviour
+    init(
+        url: URL?,
+        successStatusCodes: AnyCollection<Int> = AnyCollection([200]),
+        decodingError: Error? = nil
+    ) {
+        self.urlRequest = url.map { URLRequest(url: $0) }
+        self.successStatusCodes = successStatusCodes
+        self.decodingError = decodingError
     }
 
     func urlRequest(relativeTo url: URL) -> URLRequest? {
         urlRequest
     }
 
-    func decodeData(_ data: Data?, for response: HTTPURLResponse) -> Result<Success, Failure> {
-        switch behaviour {
-        case .succeedWithInputs:
-            return .success((data, response))
-        case let .succeed(data, response):
-            return .success((data, response))
-        case .fail:
-            return .failure(Error.someError)
+    func decodeSuccess(from data: Data, response: HTTPURLResponse) throws -> Success {
+        guard let decodingError = self.decodingError else {
+            return (data: data, response: response)
         }
+        throw decodingError
     }
 
+    func decodeFailure(from data: Data, response: HTTPURLResponse) throws -> Failure {
+        (data: data, response: response)
+    }
 }
 
-extension StubEndpoint {
+enum StubError: Equatable, Error {
+    case someError
+}
 
-    var url: URL? {
-        urlRequest?.url
+extension StubEndpoint: Equatable {
+
+    static func == (lhs: StubEndpoint, rhs: StubEndpoint) -> Bool {
+        guard lhs.successStatusCodes.count == rhs.successStatusCodes.count else { return false }
+
+        let lhsStatusCodes = lhs.successStatusCodes.reduce(into: Set<Int>()) { $0.insert($1) }
+        let rhsStatusCodes = rhs.successStatusCodes.reduce(into: Set<Int>()) { $0.insert($1) }
+
+        return lhsStatusCodes == rhsStatusCodes && lhs.urlRequest == rhs.urlRequest
     }
 
 }

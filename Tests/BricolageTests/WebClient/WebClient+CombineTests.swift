@@ -9,6 +9,7 @@ import XCTest
 @testable import Bricolage
 
 extension WebClientTests {
+    typealias EndpointResult<E: Endpoint> = Result<E.Success, Error>
 
     func whenInvokeEndpointReturningFuture<E: Endpoint>(
         _ endpoint: E,
@@ -39,37 +40,30 @@ extension WebClientTests {
     // MARK: -
 
     func testInvokeEndpointReturningFuture_URLRequestIsNil_ResultIsMisconfiguredEndpoint() {
-        let endpoint = StubEndpoint(urlRequest: nil)
+        let endpoint = StubEndpoint(url: nil)
 
         whenInvokeEndpointReturningFuture(endpoint) { result in
-            XCTAssertEqual(
-                result.failure,
-                EndpointError<StubEndpoint>.endpointIsMisconfigured(endpoint)
-            )
+            if let failure = result.failure,
+               case EndpointError<StubEndpoint>.endpointIsMisconfigured(endpoint) = failure {
+            } else {
+                XCTFail("Unexpected result")
+            }
         }
     }
 
-    func testInvokeEndpointReturningFuture_URLRequestSucceeds_DataAndResponseAreCorrect() {
-        let endpoint = StubEndpoint(urlRequest: Constant.someURLRequest)
-
-        given(data: Constant.someData, statusCode: 200, for: endpoint)
-
-        whenInvokeEndpointReturningFuture(endpoint) { result in
-            XCTAssertEqual(result.success?.data, Constant.someData)
-            XCTAssertEqual(result.success?.response.statusCode, 200)
-        }
-    }
-
-    func testInvokeEndpointReturning_EndpointFails_ResultIsFailedToDecodeData() throws {
-        let endpoint = StubEndpoint(
-            urlRequest: Constant.someURLRequest,
-            behaviour: .fail(StubEndpoint.Error.someError)
-        )
-
-        given(data: Constant.someData, statusCode: 200, for: endpoint)
+    func testInvokeEndpointReturningFuture_URLRequestFails_ThrowsDataTaskFailedWithError() {
+        let endpoint = StubEndpoint(url: Constant.requestURL)
+        let nsError = NSError(domain: "WebClient", code: 123)
+        given(error: nsError, for: endpoint)
 
         whenInvokeEndpointReturningFuture(endpoint) { result in
-            XCTAssertEqual(result.failure, .decodeFailedWithError(StubEndpoint.Error.someError))
+            if let failure = result.failure,
+               case let StubEndpointError.dataTaskFailedWithError(error) = failure {
+                XCTAssertEqual(error.domain, nsError.domain)
+                XCTAssertEqual(error.code, nsError.code)
+            } else {
+                XCTFail("Unexpected result")
+            }
         }
     }
 
