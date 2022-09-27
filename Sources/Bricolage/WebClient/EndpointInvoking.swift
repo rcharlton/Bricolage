@@ -4,7 +4,7 @@
 
 import Foundation
 
-public enum InvocationError<E: Endpoint>: Error {
+public enum EndpointError<E: Endpoint>: Error {
 
     /// An underlying URL session error such as a dropped connection.
     case dataTaskFailedWithError(NSError)
@@ -20,7 +20,7 @@ public enum InvocationError<E: Endpoint>: Error {
 
 }
 
-public typealias InvocationResult<E: Endpoint> = Result<E.Success, InvocationError<E>>
+public typealias EndpointResult<E: Endpoint> = Result<E.Success, EndpointError<E>>
 
 public protocol EndpointInvoking {
 
@@ -30,7 +30,7 @@ public protocol EndpointInvoking {
     @discardableResult
     func invoke<E: Endpoint>(
         endpoint: E,
-        completionHandler: @escaping (InvocationResult<E>) -> Void
+        completionHandler: @escaping (EndpointResult<E>) -> Void
     ) -> Cancellable?
 
 }

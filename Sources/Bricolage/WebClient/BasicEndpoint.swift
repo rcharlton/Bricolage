@@ -6,6 +6,16 @@ import Foundation
 
 public typealias BasicEndpoint = RequestProviding & StatusCodeResponseDecoding
 
+// MARK: -
+
+public enum StatusCodeResponseDecodingError<FailureDetails>: Error {
+
+    case statusCodeIsFailure(Int, details: FailureDetails?)
+
+    case failedToDecodeType(String, error: Error)
+
+}
+
 public protocol StatusCodeResponseDecoding: ResponseDecoding
 where Failure == StatusCodeResponseDecodingError<FailureDetails> {
 
@@ -32,10 +42,13 @@ public extension StatusCodeResponseDecoding {
             return Swift.Result { try decodeSuccess(from: data) }
                 .mapError { .failedToDecodeType("\(Success.self)", error: $0) }
         } else {
-            return Swift.Result { try decodeFailureDetails(from: data) }
-                .mapError { .failedToDecodeType("\(FailureDetails.self)", error: $0) }
-                .flatMap { .failure(.statusCodeIsFailure(response.statusCode, details: $0)) }
-        }
+            return .failure(
+                .statusCodeIsFailure(
+                    response.statusCode,
+                    details: try? decodeFailureDetails(from: data)
+                )
+            )
+         }
     }
 
 }
@@ -69,15 +82,5 @@ public extension StatusCodeResponseDecoding where FailureDetails == Void {
     func decodeFailureDetails(from data: Data?) throws -> FailureDetails {
         ()
     }
-
-}
-
-// MARK: -
-
-public enum StatusCodeResponseDecodingError<FailureDetails>: Error {
-
-    case statusCodeIsFailure(Int, details: FailureDetails)
-
-    case failedToDecodeType(String, error: Swift.Error)
 
 }

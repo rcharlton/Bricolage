@@ -45,12 +45,12 @@ class WebClientTests: XCTestCase {
 
     func whenInvokeEndpoint<E: Endpoint>(
         _ endpoint: E,
-        then: @escaping (Cancellable?, InvocationResult<E>) -> Void
+        then: @escaping (Cancellable?, EndpointResult<E>) -> Void
     ) {
         let expectation = self.expectation(description: "Task completes")
-        var result: InvocationResult<E>?
+        var result: EndpointResult<E>?
 
-        let cancellable = webClient.invoke(endpoint: endpoint) { (r: InvocationResult<E>) in
+        let cancellable = webClient.invoke(endpoint: endpoint) { (r: EndpointResult<E>) in
             result = r
             expectation.fulfill()
         }
@@ -79,12 +79,12 @@ class WebClientTests: XCTestCase {
         )
         given(data: Constant.someData, statusCode: 200, for: endpoint)
 
-        var thrownError: InvocationError<StubEndpoint>?
+        var thrownError: EndpointError<StubEndpoint>?
 
         do {
             try await webClient.invoke(endpoint: endpoint)
         } catch {
-            thrownError = error as? InvocationError<StubEndpoint>
+            thrownError = error as? EndpointError<StubEndpoint>
         }
 
         XCTAssertEqual(thrownError, .decodeFailedWithError(StubEndpoint.Error.someError))
@@ -106,7 +106,7 @@ class WebClientTests: XCTestCase {
         whenInvokeEndpoint(endpoint) { (_, result) in
             XCTAssertEqual(
                 result.failure,
-                InvocationError<StubEndpoint>.endpointIsMisconfigured(endpoint)
+                EndpointError<StubEndpoint>.endpointIsMisconfigured(endpoint)
             )
         }
     }
@@ -187,9 +187,9 @@ class WebClientTests: XCTestCase {
 
 }
 
-extension InvocationError: Equatable where E.Failure: Equatable {
+extension EndpointError: Equatable where E.Failure: Equatable {
 
-    public static func ==(lhs: InvocationError<E>, rhs: InvocationError<E>) -> Bool {
+    public static func ==(lhs: EndpointError<E>, rhs: EndpointError<E>) -> Bool {
         switch (lhs, rhs) {
         case let (.dataTaskFailedWithError(lhsError), .dataTaskFailedWithError(rhsError)):
             return lhsError == rhsError

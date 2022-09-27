@@ -23,7 +23,7 @@ public class WebClient: EndpointInvoking {
     @discardableResult
     public func invoke<E: Endpoint>(endpoint: E) async throws -> E.Success {
         try await withCheckedThrowingContinuation { continuation in
-            invoke(endpoint: endpoint) { (result: InvocationResult<E>) in
+            invoke(endpoint: endpoint) { (result: EndpointResult<E>) in
                 switch result {
                 case let .success(value):
                     continuation.resume(returning: value)
@@ -43,7 +43,7 @@ public class WebClient: EndpointInvoking {
     @discardableResult
     public func invoke<E: Endpoint>(
         endpoint: E,
-        completionHandler: @escaping (InvocationResult<E>) -> Void
+        completionHandler: @escaping (EndpointResult<E>) -> Void
     ) -> Cancellable? {
         guard let urlRequest = urlRequest(for: endpoint) else {
             completionHandler(.failure(.endpointIsMisconfigured(endpoint)))
@@ -51,7 +51,7 @@ public class WebClient: EndpointInvoking {
         }
 
         let task = urlSession.dataTask(with: urlRequest) {
-            let result: InvocationResult<E> = makeResult(data: $0, response: $1, error: $2)
+            let result: EndpointResult<E> = makeResult(data: $0, response: $1, error: $2)
                 .flatMap(validateResponse)
                 .flatMap(decodeData(for: endpoint))
 
@@ -81,7 +81,7 @@ private func makeResult<E: Endpoint>(
     data: Data?,
     response: URLResponse?,
     error: Error?
-) -> Result<(Data?, URLResponse?), InvocationError<E>> {
+) -> Result<(Data?, URLResponse?), EndpointError<E>> {
     error.map { .failure(.dataTaskFailedWithError($0 as NSError)) }
         ?? .success((data, response))
 }
@@ -89,16 +89,16 @@ private func makeResult<E: Endpoint>(
 private func validateResponse<E: Endpoint>(
     data: Data?,
     response: URLResponse?
-) -> Result<(Data?, HTTPURLResponse), InvocationError<E>> {
+) -> Result<(Data?, HTTPURLResponse), EndpointError<E>> {
     (response as? HTTPURLResponse).map { .success((data, $0)) }
         ?? .failure(.urlResponseIsUnexpected)
 }
 
 private func decodeData<E: Endpoint>(
     for endpoint: E
-) -> (Data?, HTTPURLResponse) -> InvocationResult<E> {
+) -> (Data?, HTTPURLResponse) -> EndpointResult<E> {
     { (data, response) in
         endpoint.decodeData(data, for: response)
-            .mapError { InvocationError<E>.decodeFailedWithError($0) }
+            .mapError { EndpointError<E>.decodeFailedWithError($0) }
     }
 }
