@@ -137,10 +137,9 @@ A simple URLSession wrapper which provides:
 struct SearchGuideEndpoint: BasicEndpoint {
 
     typealias Success = GuideEntry
-    typealias Failure = StatusCodeResponseDecodingError<GuideError>
-    typealias FailureDetails = GuideError
-
-    let queryString: String
+    typealias Failure = GuideError
+ 
+    private let queryString: String
 
     private var urlComponents: URLComponents {
         var urlComponents = URLComponents()
@@ -152,13 +151,12 @@ struct SearchGuideEndpoint: BasicEndpoint {
     func urlRequest(relativeTo url: URL) -> URLRequest? {
         urlComponents
             .url(relativeTo: url)
-            .map { URLRequest(url: $0) }
+            .flatMap { URLRequest(url: $0) }
     }
 
 }
 
 let webClient = WebClient(serviceURL: URL(string: "hitchhikersguide.com/api")!)
 let searchQuery = SearchGuideEndpoint(queryString: "themeaningoflifeuniverseandeverything")
-let canceller = webClient.invoke(searchQuery) { result in 
-}
+let searchResults = try await webClient.invoke(searchQuery)
 ```
