@@ -36,6 +36,8 @@ public class WebClient: EndpointInvoking {
             throw Error.dataTaskFailedWithError(error as NSError)
         }
 
+        try Task.checkCancellation()
+
         let data = success.0
 
         guard let response = success.1 as? HTTPURLResponse else {
