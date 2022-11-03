@@ -1,6 +1,6 @@
 # Bricolage
 
-A Swift Package containing a somewhat random assortment of useful types. 
+A Swift Package containing a random assortment of useful types. 
 
 Wholly incomplete documentation follows...
 
@@ -133,8 +133,9 @@ A simple URLSession wrapper which provides:
 * Cancellation support
 * Combine wrapper
 
+Example usage:
 ```swift
-struct SearchGuideEndpoint: BasicEndpoint {
+struct SearchEndpoint: Endpoint {
 
     typealias Success = GuideEntry
     typealias Failure = GuideError
@@ -157,6 +158,6 @@ struct SearchGuideEndpoint: BasicEndpoint {
 }
 
 let webClient = WebClient(serviceURL: URL(string: "hitchhikersguide.com/api")!)
-let searchQuery = SearchGuideEndpoint(queryString: "themeaningoflifeuniverseandeverything")
+let searchQuery = SearchEndpoint(queryString: "themeaningoflifeuniverseandeverything")
 let searchResults = try await webClient.invoke(searchQuery)
 ```
